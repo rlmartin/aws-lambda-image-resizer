@@ -68,6 +68,17 @@ Each image uploaded to S3 will be resized to this full list of sizes.
 
 
 
+## To Deploy to your AWS account
+1. In CloudWatch Logs, create a log group named '/aws/lambda/{your-stack-name-here}'. It is really annoying that this can't
+   be automatically created in the CloudFormation template, but it can't. If there is ever support for this in CloudFormation,
+   these instructions will be updated.
+2. Create a CloudFormation stack using https://s3.amazonaws.com/com.gilt.public.backoffice/cloudformation_templates/aws-lambda-image-resizer-deploy.template
+3. Upload your config file to aws.lambda.{your-region}.{your-account-id}.config/{stack-name}.json
+4. Set up notifications from S3 to the new Lambda function, for all of your image buckets.
+5. Set up alarms based on the metrics created by this template: errors, lambda-function-timeouts, resized-files.
+
+
+
 ## Testing
 ```
   mocha --recursive test

@@ -52,6 +52,17 @@ exports.handler = function(event, context) {
                     Body: fileContents,
                     ContentType: helpers.getMimeType(config.supportedFormats, imageFormat)
                   });
+                })
+                .then(function(putData) {
+                  var result = {
+                    bucket: record.s3.bucket.name,
+                    object_key: record.s3.object.key,
+                    resized_object_key: rootS3Path + "/" + resizeKey,
+                    width: resizeConfig.width,
+                    height: resizeConfig.height
+                  };
+                  console.info(JSON.stringify(result));
+                  return result;
                 });
               }
             );

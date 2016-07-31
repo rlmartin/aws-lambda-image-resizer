@@ -1,0 +1,157 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "Role": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version" : "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [ "lambda.amazonaws.com" ]
+              },
+              "Action": [ "sts:AssumeRole" ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "LogWriter",
+            "PolicyDocument": {
+              "Version" : "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "ConfigReader",
+            "PolicyDocument": {
+              "Version" : "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject"
+                  ],
+                  "Resource": { "Fn::Join":  [ "", [ "arn:aws:s3:::aws.lambda.", { "Ref": "AWS::Region" }, ".", { "Ref": "AWS::AccountId" } , ".config/*" ] ] }
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "ImageWriter",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:CopyObject",
+                    "s3:GetObject",
+                    "s3:ListObjects",
+                    "s3:PutObject"
+                  ],
+                  "Resource": [
+                    "arn:aws:s3:::*",
+                    "arn:aws:s3:::*/*"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Function": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "com.gilt.public.backoffice",
+          "S3Key": "lambda_functions/aws-lambda-image-resizer.zip"
+        },
+        "FunctionName": { "Ref": "AWS::StackName" },
+        "Description": "When notified from S3, will resize images according to config.",
+        "Handler": "index.handler",
+        "MemorySize": "256",
+        "Role": { "Fn::GetAtt" : [ "Role", "Arn" ] },
+        "Runtime": "nodejs4.3",
+        "Timeout": 300
+      },
+      "DependsOn": [
+        "Role"
+      ]
+    },
+    "FunctionTimeoutMetric": {
+      "Type": "AWS::Logs::MetricFilter",    
+      "Properties": {
+        "FilterPattern": "Task timed out",
+        "LogGroupName": { "Fn::Join" : ["", [ "/aws/lambda/", { "Ref" : "Function" } ] ] },
+        "MetricTransformations": [
+          {
+            "MetricValue": "1",
+            "MetricNamespace": { "Ref": "AWS::StackName" },
+            "MetricName": "lambda-function-timeouts"
+          }
+        ]
+      },
+      "DependsOn": [
+        "Function"
+      ]
+    },
+    "ErrorMetric": {
+      "Type": "AWS::Logs::MetricFilter",    
+      "Properties": {
+        "FilterPattern": "UnknownException",
+        "LogGroupName": { "Fn::Join" : ["", [ "/aws/lambda/", { "Ref" : "Function" } ] ] },
+        "MetricTransformations": [
+          {
+            "MetricValue": "1",
+            "MetricNamespace": { "Ref": "AWS::StackName" },
+            "MetricName": "errors"
+          }
+        ]
+      },
+      "DependsOn": [
+        "Function"
+      ]
+    },
+    "ResizeMetric": {
+      "Type": "AWS::Logs::MetricFilter",    
+      "Properties": {
+        "FilterPattern": "{ $.resized_object_key = * }",
+        "LogGroupName": { "Fn::Join" : ["", [ "/aws/lambda/", { "Ref" : "Function" } ] ] },
+        "MetricTransformations": [
+          {
+            "MetricValue": "1",
+            "MetricNamespace": { "Ref": "AWS::StackName" },
+            "MetricName": "resized-files"
+          }
+        ]
+      },
+      "DependsOn": [
+        "Function"
+      ]
+    }
+  },
+  "Outputs": {
+    "FunctionArn": {
+      "Description": "The ARN of the function that resizes images.",
+      "Value": { "Fn::GetAtt": [ "Function", "Arn" ] }
+    },
+    "FunctionRole": {
+      "Description": "The role used by the generated Lambda function, to be added to any KMS keys.",
+      "Value": { "Ref": "Role" }
+    }
+  }
+}
