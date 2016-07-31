@@ -1,0 +1,21 @@
+{
+  "supportedFormats": {
+    "png": [
+      "image/png",
+      "png"
+    ],
+    "jpeg": [
+      "image/jpeg",
+      "image/pjpeg",
+      "jpg",
+      "jpeg",
+      "jpe"
+    ]
+  },
+  "sizes": {
+    "small": {
+      "width": 100,
+      "height": 100
+    }
+  }
+}

@@ -35,3 +35,9 @@ jspm_packages
 
 # Optional REPL history
 .node_repl_history
+
+# OS artifacts
+.DS_Store
+
+# aws-image-resizer
+aws-lambda-image-resizer.zip
