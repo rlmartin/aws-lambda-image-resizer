@@ -19,6 +19,7 @@ exports.handler = function(event, context) {
         var rootS3Path = fullS3PathArray.slice(1, fullS3PathArray.length).join('/');
         var ext = helpers.getExtension(fullS3Path);
         if (ext.length > 0) rootS3Path = rootS3Path.substr(0, ext.length + 1);
+        if (Object.keys(config.sizes).indexOf(fullS3PathArray[fullS3PathArray.length - 1]) >= 0) return null; // Short-circuit recursively processing images
         return s3.getObjectAsync({
           Bucket: record.s3.bucket.name,
           Key: record.s3.object.key
